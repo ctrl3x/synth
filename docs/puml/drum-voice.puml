@@ -1,0 +1,30 @@
+@startuml drum-voice
+title Барабанные голоса — «подводная пещера»\n(лёгкие, приглушённые, с большим реверб-сендом)
+
+left to right direction
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam rectangleBorderThickness 1.5
+skinparam defaultTextAlignment center
+
+rectangle "deep — глухой удар\nsine с падением высоты\nот deepPitch к хвосту\nза deepDecay" as deep #FFF2CC
+rectangle "drip — капля\nsine-чирп вверх от dripTone\nспад за dripDecay" as drip #FFF2CC
+rectangle "drip — плеск\nбелый шум через bandpass\nвслед за тоном,\nкороткий спад" as splash #FFF2CC
+rectangle "drumBus\n(drum level)" as bus #DEEBF7
+rectangle "underwater lowpass\n(underCutoff)\nглавный «подводный» фильтр" as lpf #DEEBF7
+rectangle "drumDry\n→ master" as dry #D5E8D4
+rectangle "общий wet → реверб\n(единый параметр wet —\nхвост = пещера)" as wet #D9D2E9
+
+deep --> bus
+drip --> bus
+splash --> bus
+bus --> lpf
+lpf --> dry
+lpf --> wet
+
+note bottom of lpf
+  вайб пещеры =
+  lowpass (глушит верха)
+  + длинный общий реверб (wet)
+end note
+@enduml

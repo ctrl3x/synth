@@ -1,0 +1,36 @@
+@startuml flute-voice
+title Голос флейты — порядок обработки исходной волны\n(номера = этапы по ходу сигнала)
+
+left to right direction
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam rectangleBorderThickness 1.5
+skinparam defaultTextAlignment center
+
+rectangle "1. ОСЦИЛЛЯТОР 1 — исходный профиль\nwaveform:\n• sine ∿\n• triangle △ (по умолчанию)\n• square ⊓\n• sawtooth ▱" as osc1 #FFF2CC
+rectangle "1. ОСЦИЛЛЯТОР 2\nвсегда sine ∿\n+ статичный detune\n(расстройка в центах)" as osc2 #FFF2CC
+rectangle "вибрато-LFO (vibRate)\nглубина (vibDepth)\nнарастает после атаки" as lfo #FCE5CD
+rectangle "2. OSCMIX\nсумма двух осцилляторов:\nитоговый «профиль звука»" as mix #DEEBF7
+rectangle "2. BREATH-ШУМ\nбелый шум → bandpass\nвслед за высотой ноты\nуровень = breath" as breath #FFF2CC
+rectangle "3. ФИЛЬТР lowpass (cutoff)\nпервый фильтр на профиле:\nсрезает верха, тембр мягче/тусклее" as lpf #DEEBF7
+rectangle "4. ОГИБАЮЩАЯ ADSR\nattack → hold → release\nформа громкости ноты" as env #DEEBF7
+rectangle "5. bus → dry → master" as dry #D5E8D4
+rectangle "5. bus → wet → reverb\n(параметр wet)" as wet #D9D2E9
+
+lfo -[#999999,dashed]-> osc1 : detune ±
+lfo -[#999999,dashed]-> osc2 : detune ±
+osc1 --> mix
+osc2 --> mix
+breath --> lpf
+mix --> lpf
+lpf --> env
+env --> dry
+env --> wet
+
+note bottom of lpf
+  порядок жёсткий:
+  волна → микс → фильтр → огибающая
+  (вибрато влияет до фильтра —
+  на detune осцилляторов)
+end note
+@enduml

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electronic Flute Synth</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <button id="btn-play" type="button">Play</button>
+    <label class="bpm-label">bpm
+      <input id="bpm" type="range" min="80" max="110" step="1" value="100">
+      <span id="bpm-value" class="param-value">100</span>
+    </label>
+    <div id="volume-knob"></div>
+    <button id="btn-preview" type="button">preview: on</button>
+    <button id="btn-clear" type="button">clear</button>
+  </header>
+  <main>
+    <section class="piano-roll" id="piano-roll"></section>
+    <aside class="panel" id="panel"></aside>
+  </main>
+  <section class="deck deck-common">
+    <aside class="panel" id="common-panel"></aside>
+  </section>
+  <section class="deck">
+    <section class="piano-roll" id="drum-roll"></section>
+    <aside class="panel" id="drum-panel"></aside>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font: 13px monospace;
+  margin: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bpm-label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bpm-label input[type="range"] {
+  width: 120px;
+}
+
+main,
+.deck {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.deck {
+  margin-top: 24px;
+}
+
+.deck-common .panel {
+  width: auto;
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+.piano-roll {
+  display: grid;
+  grid-template-columns: 44px repeat(16, 30px);
+  gap: 2px;
+}
+
+.cell {
+  height: 20px;
+  padding: 0;
+  border: 1px solid #bbb;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+
+.cell.active {
+  background: #444;
+}
+
+.cell.playing {
+  outline: 2px solid #e91e63;
+}
+
+.note-label {
+  height: 20px;
+  line-height: 20px;
+  font-size: 10px;
+  text-align: right;
+  padding-right: 4px;
+  color: #666;
+}
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 8px;
+  width: 250px;
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 72px;
+}
+
+.param-label {
+  color: #333;
+}
+
+.param-value {
+  font-size: 11px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.param select {
+  width: 100%;
+  font: inherit;
+}
+
+.param-slider {
+  width: 100%;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.param-slider .param-label {
+  width: 64px;
+  flex: none;
+}
+
+.param-slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.param-slider .param-value {
+  width: 58px;
+  text-align: right;
+  flex: none;
+}
+
+.knob {
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.knob:focus-visible {
+  outline: 2px solid #e91e63;
+}

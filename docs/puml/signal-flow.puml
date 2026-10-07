@@ -1,0 +1,59 @@
+@startuml signal-flow
+title Аудиограф синтезатора — общий поток сигнала\n(что куда идёт и где цепляется реверб)
+
+left to right direction
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam rectangleBorderThickness 1.5
+skinparam defaultTextAlignment center
+
+' === ИСТОЧНИКИ (сырой профиль волны) ===
+rectangle "voice_flute\nосц1: профиль волны\n(sine / triangle / square / saw)\n+ осц2: sine с detune\n+ breath-шум" as flute #FFF2CC
+rectangle "voice_deep\nsine с падением\nвысоты (глухой удар)" as deep #FFF2CC
+rectangle "voice_drip\nsine-чирп вверх +\nплеск шума (капля)" as drip #FFF2CC
+
+' === ФЛЕЙТОВЫЙ ПУТЬ ===
+rectangle "bus\n(флейтовый микс)" as bus #DEEBF7
+rectangle "dry\nсухой сигнал" as dry #DEEBF7
+
+' === БАРАБАННЫЙ ПУТЬ ===
+rectangle "drumBus\n(drum level)" as drumBus #DEEBF7
+rectangle "underwater lowpass\n(underCutoff)\nглушит верха: «под водой»" as uLP #DEEBF7
+rectangle "drumDry" as drumDry #DEEBF7
+
+' === ОБЩИЙ FX ===
+rectangle "wet\n(общий сенд\nв реверб)" as wet #D9D2E9
+rectangle "convolver\nобщий реверб" as conv #D9D2E9
+rectangle "reverbOut" as rout #D9D2E9
+
+' === МАСТЕР ===
+rectangle "master gain\n(volume)" as master #D5E8D4
+rectangle "compressor\nлимитер от клипа" as comp #D5E8D4
+rectangle "→ аудиовыход" as out #D5E8D4
+
+flute --> bus
+bus --> dry
+dry --> master
+bus --> wet
+wet --> conv
+
+deep --> drumBus
+drip --> drumBus
+drumBus --> uLP
+uLP --> drumDry
+drumDry --> master
+uLP --> wet
+
+conv --> rout
+rout --> master
+
+master --> comp
+comp --> out
+
+note bottom of conv
+  один реверб на всё: во вход
+  сходятся флейтовый сенд
+  и барабанный, оба масштабирует
+  общий параметр wet
+end note
+@enduml

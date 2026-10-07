@@ -1,0 +1,115 @@
+# Electronic Flute Synth
+
+Прототип веб-синтезатора на чистом Web Audio API (без библиотек): электронная флейта + драм-партия «подводная пещера», два piano-roll по 16 шагов, минималистичный CSS.
+
+**Запуск:** открыть `index.html` в браузере (можно как файл, сервер не нужен).
+
+**Файлы:** `index.html` — разметка · `style.css` — временные стили · `app.js` — вся логика. Подробные PlantUML-диаграммы: `docs/puml` (исходники) и `docs/img` (картинки).
+
+---
+
+## Общий поток сигнала
+
+На этом уровне живут параметры: `wet` — общий реверб-сенд; `drumLevel`, `underCutoff` — драм-шина; `volume` — мастер.
+
+```mermaid
+flowchart LR
+    F["голос флейты<br>(на каждую ноту)"]:::src --> BUS["bus"]:::proc
+    BUS -->|"dry"| M["master gain<br>volume"]:::master
+    BUS -->|"wet"| REV["convolver<br>общий реверб"]:::fx
+    DEEP["deep"]:::src --> DB["drumBus<br>drumLevel"]:::proc
+    DRIP["drip"]:::src --> DB
+    DB --> ULP["lowpass<br>underCutoff<br>под водой"]:::proc
+    ULP -->|"dry"| M
+    ULP -->|"wet"| REV
+    REV --> RO["reverbOut"]:::fx --> M
+    M --> C["compressor"]:::master --> OUT["аудиовыход"]:::master
+
+    classDef src fill:#FFF2CC
+    classDef proc fill:#DEEBF7
+    classDef fx fill:#D9D2E9
+    classDef master fill:#D5E8D4
+```
+
+Реверб один на всё: во вход convolver сходятся флейтовый сенд и барабанный, оба масштабируются одним параметром `wet` (общая панель).
+
+---
+
+## Голос флейты — порядок обработки волны
+
+Этапы строго по ходу сигнала: источник → микс → фильтр → огибающая. Вибрато влияет **до** фильтра — на detune осцилляторов.
+
+```mermaid
+flowchart LR
+    OSC1["осц 1 — исходный профиль<br>waveform: sine / triangle /<br>square / sawtooth"]:::src --> MIX["oscMix<br>сумма осцилляторов"]:::proc
+    OSC2["осц 2, всегда sine<br>+ detune, центы"]:::src --> MIX
+    LFO["LFO sine<br>vibRate, Гц"]:::mod -.->|"vibDepth (центы)<br>нарастает после атаки"| OSC1
+    LFO -.-> OSC2
+    MIX --> LPF["lowpass<br>cutoff"]:::proc
+    NZ["белый шум"]:::src --> BP["bandpass<br>вслед за высотой ноты"]:::proc
+    BP -->|"breath"| LPF
+    LPF --> ENV["огибающая ADSR<br>attack → hold → release"]:::proc
+    ENV --> BUSOUT["в bus → dry / wet"]:::master
+
+    classDef src fill:#FFF2CC
+    classDef proc fill:#DEEBF7
+    classDef mod fill:#FCE5CD
+    classDef master fill:#D5E8D4
+```
+
+---
+
+## Барабанные голоса — подводная пещера
+
+```mermaid
+flowchart LR
+    DEEP["deep — глухой удар<br>sine с падением высоты<br>за deepDecay"]:::src --> DB["drumBus<br>drumLevel"]:::proc
+    DRIP["drip — капля<br>sine-чирп вверх от dripTone<br>спад за dripDecay"]:::src --> DB
+    SPL["плеск капли<br>шум через bandpass<br>вслед за тоном"]:::src --> DB
+    DB --> ULP["lowpass underCutoff<br>главный подводный фильтр"]:::proc
+    ULP -.->|"далее dry + wet,<br>см. общую схему"| MORE((…))
+
+    classDef src fill:#FFF2CC
+    classDef proc fill:#DEEBF7
+```
+
+Вайб пещеры = lowpass (глушит верха) + щедрый общий `wet`.
+
+---
+
+## Планировщик (реальная логика)
+
+- 16 шагов на такт-луп, шаг = 16-я нота: `60 / bpm / 4`, bpm ограничен 80–110
+- lookahead-планировщик: `setInterval` каждые 25 мс планирует ноты на 120 мс вперёд по `audioContext.currentTime` — тайминги не плывут
+- нота играет чуть короче шага — пауза между нотами даёт артикуляцию флейты
+- плейхед — подсветка колонки через `setTimeout`, синхронно на обеих сетках
+- `volume`, `wet`, `underCutoff`, `drumLevel` применяются на лету; остальные — при следующей ноте
+
+---
+
+## Панели и параметры
+
+Крутилок (потенциометров) на странице ровно 8: `volume`, `detune all`, `wet`, `detune`, `breath`, `cutoff`, `underwater`, `drum level`. Остальные параметры — обычные шкалы (range-слайдеры).
+
+| Параметр | Панель | Этап по ходу сигнала | Что делает |
+|---|---|---|---|
+| `volume` | тулбар (крутилка) | master gain перед компрессором | общая громкость |
+| `bpm` | тулбар (слайдер) | планировщик | длительность шага = 60/bpm/4 (80–110) |
+| `detune all` | общая (крутилка) | все источники: флейта + барабаны | глобальный сдвиг высоты в центах (−50…+50) |
+| `wet` | общая (крутилка) | сенды bus и drum-lowpass в общий реверб | «мокрость» всего микса |
+| `waveform` | флейта (select) | источник: осц 1 | профиль волны: sine / triangle / square / sawtooth |
+| `detune` | флейта (крутилка) | источник: осц 2 | статичная расстройка осц 2 (центы) — толщина звука |
+| `breath` | флейта (крутилка) | вход lowpass-фильтра | громкость bandpass-шума «дыхания» |
+| `cutoff` | флейта (крутилка) | lowpass после oscMix | срез верхов — главный тембровый фильтр |
+| `vib depth` | флейта (шкала) | LFO → detune осц (до фильтра) | глубина вибрато, нарастает после атаки |
+| `vib rate` | флейта (шкала) | LFO → detune осц (до фильтра) | частота вибрато |
+| `attack` | флейта (шкала) | огибающая после фильтра | время атаки (заодно задержка вибрато) |
+| `release` | флейта (шкала) | огибающая после фильтра | время спада после гейта |
+| `underwater` | барабаны (крутилка) | lowpass после drumBus | «подводное» приглушение |
+| `drum level` | барабаны (крутилка) | drumBus до фильтра | громкость драм-партии |
+| `deep pitch` | барабаны (шкала) | источник deep | стартовая высота удара, падает к хвосту |
+| `deep decay` | барабаны (шкала) | источник + огибающая deep | длина удара |
+| `drip tone` | барабаны (шкала) | источник drip | частота чирпа капли |
+| `drip decay` | барабаны (шкала) | огибающая drip | длина капли и её плеска |
+
+Живое применение: `volume`, `wet`, `underCutoff`, `drumLevel` меняются на лету; `detuneAll`, вибрато, огибающие и тоны барабанов — при следующей ноте/ударе.
