@@ -148,3 +148,53 @@ main,
 .knob:focus-visible {
   outline: 2px solid var(--text);
 }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--text) 0 var(--fill, 0%),
+    var(--line) var(--fill, 0%) 100%
+  );
+  border: none;
+  border-radius: 2px;
+  outline-offset: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--text);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--text);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--text) 0 var(--fill, 0%),
+    var(--line) var(--fill, 0%) 100%
+  );
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text);
+}

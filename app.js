@@ -460,6 +460,13 @@ class Knob {
   }
 }
 
+function paintRange(input) {
+  const min = parseFloat(input.min) || 0;
+  const max = parseFloat(input.max) || 1;
+  const v = parseFloat(input.value) || 0;
+  input.style.setProperty('--fill', ((v - min) / (max - min)) * 100 + '%');
+}
+
 function paramControl(p) {
   const row = document.createElement('div');
   row.className = 'param';
@@ -495,8 +502,10 @@ function paramControl(p) {
     input.max = p.max;
     input.step = p.step;
     input.value = p.value;
+    paintRange(input);
     input.addEventListener('input', () => {
       params[p.id] = parseFloat(input.value);
+      paintRange(input);
       out.textContent = fmtValue(p, params[p.id]);
       applyLive(p.id);
     });
@@ -566,7 +575,9 @@ function initControls() {
     else startPlayback();
   });
   const bpm = $('#bpm');
+  paintRange(bpm);
   bpm.addEventListener('input', () => {
+    paintRange(bpm);
     $('#bpm-value').textContent = bpm.value;
   });
   $('#btn-preview').addEventListener('click', () => {
