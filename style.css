@@ -2,9 +2,17 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg: #000616;
+  --line: #2C3DDD;
+  --text: #33AAFF;
+}
+
 body {
   font: 13px monospace;
   margin: 16px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .toolbar {
@@ -12,6 +20,20 @@ body {
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
+}
+
+button,
+select,
+input {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+button {
+  padding: 4px 10px;
+  cursor: pointer;
 }
 
 .bpm-label {
@@ -50,17 +72,17 @@ main,
 .cell {
   height: 20px;
   padding: 0;
-  border: 1px solid #bbb;
-  background: #f0f0f0;
+  border: 1px solid var(--line);
+  background: transparent;
   cursor: pointer;
 }
 
 .cell.active {
-  background: #444;
+  background: var(--line);
 }
 
 .cell.playing {
-  outline: 2px solid #e91e63;
+  outline: 2px solid var(--text);
 }
 
 .note-label {
@@ -69,7 +91,6 @@ main,
   font-size: 10px;
   text-align: right;
   padding-right: 4px;
-  color: #666;
 }
 
 .panel {
@@ -87,19 +108,13 @@ main,
   width: 72px;
 }
 
-.param-label {
-  color: #333;
-}
-
 .param-value {
   font-size: 11px;
-  color: #555;
   white-space: nowrap;
 }
 
 .param select {
   width: 100%;
-  font: inherit;
 }
 
 .param-slider {
@@ -131,5 +146,5 @@ main,
 }
 
 .knob:focus-visible {
-  outline: 2px solid #e91e63;
+  outline: 2px solid var(--text);
 }

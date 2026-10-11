@@ -382,15 +382,15 @@ class Knob {
     body.setAttribute('cx', '20');
     body.setAttribute('cy', '20');
     body.setAttribute('r', '15');
-    body.setAttribute('fill', '#ddd');
-    body.setAttribute('stroke', '#999');
+    body.setAttribute('fill', '#000616');
+    body.setAttribute('stroke', '#2C3DDD');
 
     this.ptr = document.createElementNS(ns, 'line');
     this.ptr.setAttribute('x1', '20');
     this.ptr.setAttribute('y1', '20');
     this.ptr.setAttribute('x2', '20');
     this.ptr.setAttribute('y2', '6');
-    this.ptr.setAttribute('stroke', '#333');
+    this.ptr.setAttribute('stroke', '#33AAFF');
     this.ptr.setAttribute('stroke-width', '2.5');
     this.ptr.setAttribute('stroke-linecap', 'round');
 
