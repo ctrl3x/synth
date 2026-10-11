@@ -1,4 +1,4 @@
-# Electronic Flute Synth
+# Prismatica — Electronic web Synth
 
 Прототип веб-синтезатора на чистом Web Audio API (без библиотек): электронная флейта + драм-партия «подводная пещера», два piano-roll по 16 шагов, минималистичный CSS.
 
