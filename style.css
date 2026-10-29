@@ -1,3 +1,5 @@
+/* Prismatica — вёрстка по макету «MacBook Air - 1» (1280×832) */
+
 * {
   box-sizing: border-box;
 }
@@ -6,195 +8,533 @@
   --bg: #000616;
   --line: #2C3DDD;
   --text: #33AAFF;
+  --knob: #7245F6;
+  --cyan: #02EEFA;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  font: 13px monospace;
-  margin: 16px;
+  margin: 0;
   background: var(--bg);
   color: var(--text);
-}
-
-.toolbar {
+  font-family: 'Pixelify Sans', monospace;
+  font-size: 16px;
   display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-button,
-select,
-input {
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  font: inherit;
-}
-
-button {
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.bpm-label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.bpm-label input[type="range"] {
-  width: 120px;
-}
-
-main,
-.deck {
-  display: flex;
-  gap: 24px;
+  justify-content: center;
   align-items: flex-start;
+  overflow: auto;
 }
 
-.deck {
-  margin-top: 24px;
+/* Сцена 1280×832 */
+.stage {
+  flex: 0 0 auto;
+  width: 1280px;
+  height: 832px;
+  padding: 40px 20px;
 }
 
-.deck-common .panel {
-  width: auto;
-  flex-direction: row;
-  align-items: flex-end;
-}
+/* ── Шапка ─────────────────────────────────────────────── */
 
-.piano-roll {
-  display: grid;
-  grid-template-columns: 44px repeat(16, 30px);
-  gap: 2px;
-}
-
-.cell {
-  height: 20px;
-  padding: 0;
+.topbar {
+  position: relative;
+  height: 86px;
   border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.topbar-crystal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 190px;
+  height: 86px;
+}
+
+.topbar-crystal-right {
+  left: auto;
+  right: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: 'Tiny5', monospace;
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 54px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* ── Сетка из трёх колонок ─────────────────────────────── */
+
+.layout {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 380px 440px 380px;
+  gap: 20px;
+  height: 646px;
+}
+
+/* ── Панели MELODY / DRUMS ─────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-head {
+  height: 45px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Tiny5', monospace;
+  font-size: 20px;
+  line-height: 23px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.panel-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.col {
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* колонки с кристаллом обведены на всю высоту,
+   колонки с кнопками — только зона параметров */
+.panel-melody .col-left,
+.panel-drums .col-right {
+  border: 1px solid var(--line);
+}
+
+.panel-melody .col-left .param-list,
+.panel-drums .col-right .param-list {
+  border: none;
+}
+
+.panel-melody .col-right .param-list,
+.panel-drums .col-left .param-list {
+  border: 1px solid var(--line);
+}
+
+.panel-crystal {
+  margin-top: auto;
+  align-self: flex-start;
+  width: 132px;
+  height: 251px;
+  filter: blur(0.8px);
+}
+
+.panel-drums .panel-crystal {
+  align-self: flex-end;
+}
+
+/* ── Строки параметров ─────────────────────────────────── */
+
+.param-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.param-list .param {
+  height: 70px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 17px;
+}
+
+.param-list .param:last-child {
+  height: 75px;
+  border-bottom: none;
+}
+
+#melody-left .param:last-child,
+#drums-right .param:last-child {
+  height: 70px;
+  border-bottom: 1px solid var(--line);
+}
+
+.param-label {
+  font-size: 16px;
+  line-height: 19px;
+}
+
+.param-list .param-knob {
+  height: 280px;
+  padding-top: 20px;
+}
+
+.param-value {
+  display: none;
+}
+
+/* Слайдеры: тонкая линия с заполнением и круглая точка */
+.slider-wrap {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 150px;
+  height: 16px;
   background: transparent;
   cursor: pointer;
 }
 
-.cell.active {
-  background: var(--line);
+input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--text) var(--fill, 50%), var(--line) var(--fill, 50%));
 }
 
-.cell.playing {
-  outline: 2px solid var(--text);
-}
-
-.note-label {
-  height: 20px;
-  line-height: 20px;
-  font-size: 10px;
-  text-align: right;
-  padding-right: 4px;
-}
-
-.panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 8px;
-  width: 250px;
-}
-
-.param {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 72px;
-}
-
-.param-value {
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.param select {
-  width: 100%;
-}
-
-.param-slider {
-  width: 100%;
-  flex-direction: row;
-  gap: 8px;
-}
-
-.param-slider .param-label {
-  width: 64px;
-  flex: none;
-}
-
-.param-slider input[type="range"] {
-  flex: 1;
-  min-width: 0;
-}
-
-.param-slider .param-value {
-  width: 58px;
-  text-align: right;
-  flex: none;
-}
-
-.knob {
-  cursor: ns-resize;
-  touch-action: none;
-  user-select: none;
-}
-
-.knob:focus-visible {
-  outline: 2px solid var(--text);
-}
-
-input[type="range"] {
+input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  background: linear-gradient(
-    to right,
-    var(--text) 0 var(--fill, 0%),
-    var(--line) var(--fill, 0%) 100%
-  );
-  border: none;
-  border-radius: 2px;
-  outline-offset: 4px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bg);
-  border: 2px solid var(--text);
-  cursor: pointer;
-}
-
-input[type="range"]::-moz-range-thumb {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  background: var(--text);
+  margin-top: -4px;
+}
+
+input[type='range']::-moz-range-track {
+  height: 2px;
+  background: var(--line);
+}
+
+input[type='range']::-moz-range-progress {
+  height: 2px;
+  background: var(--text);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+/* Ручки: пиксельный круг со шкалой */
+.knob-wrap {
+  position: relative;
+  width: 150px;
+  height: 124px;
+  margin-top: 40px;
+}
+
+.knob-wrap .knob {
+  position: absolute;
+  left: 42px;
+  top: 39px;
+}
+
+.knob-scale,
+.bpm-tick {
+  position: absolute;
+  font-size: 15px;
+  line-height: 18px;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(var(--a)) translateY(-62px) rotate(calc(-1 * var(--a)));
+}
+
+.knob-scale {
+  left: 75px;
+  top: 72px;
+}
+
+.knob:focus {
+  outline: none;
+}
+
+.knob:focus-visible {
+  outline: 1px solid var(--cyan);
+}
+
+/* Waveform: степпер ◄ значение ► */
+.param-list .param-stepper {
+  padding-top: 13px;
+}
+
+.stepper {
+  margin-top: 5px;
+  width: 150px;
+  height: 30px;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+
+.stepper-value {
+  font-size: 16px;
+  line-height: 17px;
+}
+
+.stepper-btn {
+  width: 13px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  background: var(--text);
+}
+
+.stepper-prev {
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+
+.stepper-next {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* ── Кнопки ────────────────────────────────────────────── */
+
+button {
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--text);
   background: var(--bg);
-  border: 2px solid var(--text);
+  border: 1px solid var(--line);
   cursor: pointer;
 }
 
-input[type="range"]::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--text) 0 var(--fill, 0%),
-    var(--line) var(--fill, 0%) 100%
-  );
+button:hover {
+  background: rgba(44, 61, 221, 0.25);
 }
 
-input[type="range"]::-moz-range-progress {
-  height: 4px;
-  border-radius: 2px;
+.btn-play {
+  margin: 20px 0 0 20px;
+  width: 170px;
+  height: 86px;
+  font-family: 'Tiny5', monospace;
+  font-size: 24px;
+  line-height: 27px;
+  text-transform: uppercase;
+}
+
+.side-buttons {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.side-buttons button {
+  width: 172px;
+  height: 35px;
+  padding: 0;
+}
+
+/* ── Центральная колонка ───────────────────────────────── */
+
+.center {
+  display: flex;
+  flex-direction: column;
+}
+
+.scene-box {
+  height: 540px;
+  border: 1px solid var(--line);
+}
+
+.scene {
+  position: relative;
+  height: 348px;
+  overflow: hidden;
+}
+
+.scene-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* bpm: подпись и ручка поверх сцены */
+.bpm-block {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bpm-label {
+  font-size: 16px;
+  line-height: 19px;
+}
+
+.bpm-knob {
+  position: relative;
+  width: 150px;
+  height: 124px;
+  margin-top: 18px;
+}
+
+.bpm-knob .knob {
+  position: absolute;
+  left: 34px;
+  top: 37px;
+}
+
+.bpm-tick {
+  left: 67px;
+  top: 70px;
+}
+
+.bpm-tick.active {
+  color: var(--cyan);
+}
+
+/* ── Пиано-роллы ───────────────────────────────────────── */
+
+.roll {
+  display: grid;
+}
+
+.roll-melody {
+  height: 140px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  background-image:
+    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 8)),
+    repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px calc(100% / 8));
+}
+
+.roll-drums {
+  height: 50px;
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  background-image:
+    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 8)),
+    repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px calc(100% / 2));
+}
+
+.cell {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cell:focus {
+  outline: none;
+}
+
+.cell:focus-visible {
+  outline: 1px solid var(--cyan);
+}
+
+.cell.active {
   background: var(--text);
+}
+
+.cell.playing {
+  background: rgba(51, 170, 255, 0.16);
+}
+
+.cell.active.playing {
+  background: var(--cyan);
+}
+
+/* точки-метки в драм-гриде: нечётные колонки крупнее */
+.roll-drums .cell::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text);
+  opacity: 0.6;
+}
+
+.roll-drums .cell:nth-child(even)::after {
+  width: 3px;
+  height: 3px;
+}
+
+.roll-drums .cell.active::after {
+  display: none;
+}
+
+/* ── Мастер-громкость ──────────────────────────────────── */
+
+.master-volume {
+  margin-top: 20px;
+  height: 86px;
+  border: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.master-volume .param {
+  height: 100%;
+  border-bottom: none;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.master-volume .param-label {
+  font-family: 'Tiny5', monospace;
+  font-size: 20px;
+  line-height: 23px;
+  text-transform: uppercase;
+}
+
+.master-volume .slider-wrap {
+  margin-top: 12px;
+  gap: 25px;
+}
+
+.master-volume .slider-wrap::before,
+.master-volume .slider-wrap::after {
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.master-volume .slider-wrap::before {
+  content: '0';
+}
+
+.master-volume .slider-wrap::after {
+  content: '100';
+}
+
+.master-volume input[type='range'] {
+  width: 330px;
 }

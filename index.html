@@ -3,31 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Electronic Flute Synth</title>
+  <title>Prismatica — Electronic Flute Synth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Tiny5&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="toolbar">
-    <button id="btn-play" type="button">Play</button>
-    <label class="bpm-label">bpm
-      <input id="bpm" type="range" min="80" max="110" step="1" value="100">
-      <span id="bpm-value" class="param-value">100</span>
-    </label>
-    <div id="volume-knob"></div>
-    <button id="btn-preview" type="button">preview: on</button>
-    <button id="btn-clear" type="button">clear</button>
-  </header>
-  <main>
-    <section class="piano-roll" id="piano-roll"></section>
-    <aside class="panel" id="panel"></aside>
-  </main>
-  <section class="deck deck-common">
-    <aside class="panel" id="common-panel"></aside>
-  </section>
-  <section class="deck">
-    <section class="piano-roll" id="drum-roll"></section>
-    <aside class="panel" id="drum-panel"></aside>
-  </section>
+  <div class="stage">
+    <header class="topbar">
+      <img class="topbar-crystal" src="assets/crystal-header-left.png" alt="">
+      <h1 class="title">Prismatica</h1>
+      <img class="topbar-crystal topbar-crystal-right" src="assets/crystal-header-right.png" alt="">
+    </header>
+
+    <div class="layout">
+      <section class="panel panel-melody">
+        <div class="panel-head">melody</div>
+        <div class="panel-body">
+          <div class="col col-left">
+            <div class="param-list" id="melody-left"></div>
+            <img class="panel-crystal" src="assets/crystal-melody.png" alt="">
+          </div>
+          <div class="col col-right">
+            <div class="param-list" id="melody-right"></div>
+            <button id="btn-play" type="button" class="btn-play">play</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="center">
+        <div class="scene-box">
+          <div class="scene">
+            <img class="scene-photo" src="assets/cave.png" alt="">
+            <div class="bpm-block">
+              <div class="bpm-label">bpm</div>
+              <div class="bpm-knob" id="bpm-knob"></div>
+            </div>
+          </div>
+          <div class="roll roll-melody" id="piano-roll"></div>
+          <div class="roll roll-drums" id="drum-roll"></div>
+        </div>
+        <div class="master-volume" id="volume-knob"></div>
+      </section>
+
+      <section class="panel panel-drums">
+        <div class="panel-head">DRUMS</div>
+        <div class="panel-body">
+          <div class="col col-left">
+            <div class="param-list" id="drums-left"></div>
+            <div class="side-buttons">
+              <button id="btn-preview" type="button">preview: on</button>
+              <button id="btn-clear" type="button">clear</button>
+            </div>
+          </div>
+          <div class="col col-right">
+            <div class="param-list" id="drums-right"></div>
+            <img class="panel-crystal" src="assets/crystal-drums.png" alt="">
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

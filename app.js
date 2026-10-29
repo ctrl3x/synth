@@ -3,38 +3,44 @@
 const STEPS = 16;
 const PITCHES = [72, 71, 69, 67, 65, 64, 62, 60];
 const ROWS = PITCHES.length;
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const DRUM_ROWS = ['deep', 'drip'];
 const DRUM_COUNT = DRUM_ROWS.length;
 
-const PARAMS = [
-  { id: 'waveform', label: 'waveform', type: 'select', options: ['sine', 'triangle', 'square', 'sawtooth'], value: 'triangle' },
-  { id: 'detune', label: 'detune', min: 0, max: 50, step: 1, value: 8, unit: 'ct' },
-  { id: 'breath', label: 'breath', min: 0, max: 1, step: 0.01, value: 0.22 },
-  { id: 'cutoff', label: 'cutoff', min: 200, max: 8000, step: 10, value: 2600, unit: 'Hz' },
+// Панель MELODY: левая колонка — огибающая/вибрато, правая — уровень и тембр
+const MELODY_LEFT = [
+  { id: 'breath', label: 'breath', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.22 },
   { id: 'vibDepth', label: 'vib depth', type: 'slider', min: 0, max: 60, step: 1, value: 18, unit: 'ct' },
   { id: 'vibRate', label: 'vib rate', type: 'slider', min: 0.5, max: 10, step: 0.1, value: 5.2, unit: 'Hz' },
   { id: 'attack', label: 'attack', type: 'slider', min: 0.005, max: 0.5, step: 0.005, value: 0.06, unit: 's' },
   { id: 'release', label: 'release', type: 'slider', min: 0.05, max: 2, step: 0.05, value: 0.25, unit: 's' },
 ];
 
-const COMMON_PARAMS = [
-  { id: 'detuneAll', label: 'detune all', min: -50, max: 50, step: 1, value: 0, unit: 'ct' },
-  { id: 'wet', label: 'wet', min: 0, max: 1, step: 0.01, value: 0.4 },
+const MELODY_RIGHT = [
+  { id: 'fluteLevel', label: 'volume', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.7 },
+  { id: 'detune', label: 'detune', min: 0, max: 50, step: 1, value: 8, unit: 'ct' },
+  { id: 'cutoff', label: 'cutoff', type: 'slider', min: 200, max: 8000, step: 10, value: 2600, unit: 'Hz' },
+  { id: 'waveform', label: 'waveform', type: 'stepper', options: ['sine', 'triangle', 'square', 'sawtooth'], value: 'triangle' },
 ];
 
-const DRUM_PARAMS = [
-  { id: 'underCutoff', label: 'underwater', min: 200, max: 4000, step: 10, value: 1200, unit: 'Hz' },
-  { id: 'drumLevel', label: 'drum level', min: 0, max: 1, step: 0.01, value: 0.6 },
+// Панель DRUMS: левая колонка — шина, правая — барабаны и реверб
+const DRUMS_LEFT = [
+  { id: 'drumVolume', label: 'volume', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.7 },
+  { id: 'detuneAll', label: 'detune', min: -50, max: 50, step: 1, value: 0, unit: 'ct' },
+  { id: 'underCutoff', label: 'underwater', type: 'slider', min: 200, max: 4000, step: 10, value: 1200, unit: 'Hz' },
+  { id: 'drumLevel', label: 'drum level', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.6 },
+];
+
+const DRUMS_RIGHT = [
+  { id: 'wet', label: 'wet', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.4 },
   { id: 'deepPitch', label: 'deep pitch', type: 'slider', min: 40, max: 200, step: 1, value: 110, unit: 'Hz' },
   { id: 'deepDecay', label: 'deep decay', type: 'slider', min: 0.1, max: 0.8, step: 0.01, value: 0.3, unit: 's' },
   { id: 'dripTone', label: 'drip tone', type: 'slider', min: 300, max: 3000, step: 10, value: 1200, unit: 'Hz' },
   { id: 'dripDecay', label: 'drip decay', type: 'slider', min: 0.05, max: 0.4, step: 0.01, value: 0.15, unit: 's' },
 ];
 
-const VOLUME_PARAM = { id: 'volume', label: 'volume', min: 0, max: 1, step: 0.01, value: 0.7 };
+const VOLUME_PARAM = { id: 'volume', label: 'volume', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.7 };
 
-const ALL_PARAMS = PARAMS.concat(COMMON_PARAMS, DRUM_PARAMS, [VOLUME_PARAM]);
+const ALL_PARAMS = [].concat(MELODY_LEFT, MELODY_RIGHT, DRUMS_LEFT, DRUMS_RIGHT, [VOLUME_PARAM]);
 
 const FLUTE_DEMO = [[0, 0], [2, 2], [4, 3], [6, 5], [8, 6], [10, 5], [12, 3], [14, 7]];
 const DRUM_DEMO = [[0, 0], [8, 0], [6, 1], [14, 1]];
@@ -62,6 +68,7 @@ let nextStepTime = 0;
 let schedulerId = null;
 let playheadStep = -1;
 let previewOn = true;
+let bpmValue = 100;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -111,6 +118,7 @@ function ensureAudio() {
   reverbOut.connect(master);
 
   const bus = ctx.createGain();
+  bus.gain.value = params.fluteLevel;
   const dry = ctx.createGain();
   dry.gain.value = 1;
   const wet = ctx.createGain();
@@ -127,7 +135,7 @@ function ensureAudio() {
   drumFilter.frequency.value = params.underCutoff;
   drumFilter.Q.value = 0.7;
   const drumDry = ctx.createGain();
-  drumDry.gain.value = 1;
+  drumDry.gain.value = params.drumVolume;
   drumBus.connect(drumFilter);
   drumFilter.connect(drumDry);
   drumDry.connect(master);
@@ -138,7 +146,7 @@ function ensureAudio() {
   const nd = noiseBuffer.getChannelData(0);
   for (let i = 0; i < noiseLen; i++) nd[i] = Math.random() * 2 - 1;
 
-  audio = { ctx, master, bus, wet, drumBus, drumFilter };
+  audio = { ctx, master, bus, wet, drumBus, drumFilter, drumDry };
   return audio;
 }
 
@@ -273,8 +281,7 @@ function playDrip(t) {
 }
 
 function stepDuration() {
-  const bpm = Math.min(110, Math.max(80, parseFloat($('#bpm').value) || 100));
-  return 60 / bpm / 4;
+  return 60 / bpmValue / 4;
 }
 
 function scheduleStep(step, t) {
@@ -352,6 +359,8 @@ function stopPlayback() {
 function applyLive(id) {
   if (!audio) return;
   if (id === 'volume') audio.master.gain.value = params.volume;
+  if (id === 'fluteLevel') audio.bus.gain.value = params.fluteLevel;
+  if (id === 'drumVolume') audio.drumDry.gain.value = params.drumVolume;
   if (id === 'wet') audio.wet.gain.value = params.wet;
   if (id === 'drumLevel') audio.drumBus.gain.value = params.drumLevel;
   if (id === 'underCutoff') audio.drumFilter.frequency.value = params.underCutoff;
@@ -361,16 +370,31 @@ function fmtValue(p, v) {
   return p.unit ? v + ' ' + p.unit : String(v);
 }
 
+function pixelCirclePoints(cx, cy, r, step) {
+  const pts = [];
+  const n = Math.round((2 * r) / step);
+  const half = (y) => Math.floor(Math.sqrt(Math.max(0, r * r - y * y)) / step) * step;
+  for (let i = n; i >= 0; i--) {
+    const y = -r + i * step;
+    pts.push((cx - half(y)).toFixed(1) + ',' + (cy + y).toFixed(1));
+  }
+  for (let i = 0; i <= n; i++) {
+    const y = -r + i * step;
+    pts.push((cx + half(y)).toFixed(1) + ',' + (cy + y).toFixed(1));
+  }
+  return pts.join(' ');
+}
+
 class Knob {
-  constructor(p, onChange) {
+  constructor(p, onChange, opts = {}) {
     this.p = p;
     this.onChange = onChange;
     this.value = params[p.id];
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 40 40');
-    svg.setAttribute('width', '40');
-    svg.setAttribute('height', '40');
+    svg.setAttribute('viewBox', '0 0 66 66');
+    svg.setAttribute('width', '66');
+    svg.setAttribute('height', '66');
     svg.setAttribute('role', 'slider');
     svg.setAttribute('tabindex', '0');
     svg.setAttribute('aria-label', p.label);
@@ -378,21 +402,17 @@ class Knob {
     svg.setAttribute('aria-valuemax', p.max);
     svg.classList.add('knob');
 
-    const body = document.createElementNS(ns, 'circle');
-    body.setAttribute('cx', '20');
-    body.setAttribute('cy', '20');
-    body.setAttribute('r', '15');
-    body.setAttribute('fill', '#000616');
-    body.setAttribute('stroke', '#2C3DDD');
+    const body = document.createElementNS(ns, 'polygon');
+    body.setAttribute('points', pixelCirclePoints(33, 33, 31, 4));
+    body.setAttribute('fill', opts.body || '#7245F6');
 
     this.ptr = document.createElementNS(ns, 'line');
-    this.ptr.setAttribute('x1', '20');
-    this.ptr.setAttribute('y1', '20');
-    this.ptr.setAttribute('x2', '20');
-    this.ptr.setAttribute('y2', '6');
-    this.ptr.setAttribute('stroke', '#33AAFF');
-    this.ptr.setAttribute('stroke-width', '2.5');
-    this.ptr.setAttribute('stroke-linecap', 'round');
+    this.ptr.setAttribute('x1', '33');
+    this.ptr.setAttribute('y1', '33');
+    this.ptr.setAttribute('x2', '33');
+    this.ptr.setAttribute('y2', '7');
+    this.ptr.setAttribute('stroke', opts.pointer || '#02EEFA');
+    this.ptr.setAttribute('stroke-width', '5');
 
     svg.append(body, this.ptr);
     svg.addEventListener('pointerdown', (e) => this.startDrag(e));
@@ -420,7 +440,7 @@ class Knob {
 
   render() {
     const t = (this.value - this.p.min) / (this.p.max - this.p.min);
-    this.ptr.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 20 20)');
+    this.ptr.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 33 33)');
     this.svg.setAttribute('aria-valuenow', this.value);
   }
 
@@ -460,6 +480,104 @@ class Knob {
   }
 }
 
+class BpmKnob {
+  constructor(container) {
+    this.value = bpmValue;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 66 66');
+    svg.setAttribute('width', '66');
+    svg.setAttribute('height', '66');
+    svg.setAttribute('role', 'slider');
+    svg.setAttribute('tabindex', '0');
+    svg.setAttribute('aria-label', 'bpm');
+    svg.setAttribute('aria-valuemin', '80');
+    svg.setAttribute('aria-valuemax', '110');
+    svg.classList.add('knob');
+
+    const body = document.createElementNS(ns, 'polygon');
+    body.setAttribute('points', pixelCirclePoints(33, 33, 31, 4));
+    body.setAttribute('fill', '#02EEFA');
+
+    this.ptr = document.createElementNS(ns, 'line');
+    this.ptr.setAttribute('x1', '33');
+    this.ptr.setAttribute('y1', '33');
+    this.ptr.setAttribute('x2', '33');
+    this.ptr.setAttribute('y2', '7');
+    this.ptr.setAttribute('stroke', '#000616');
+    this.ptr.setAttribute('stroke-width', '5');
+
+    svg.append(body, this.ptr);
+    svg.addEventListener('pointerdown', (e) => this.startDrag(e));
+    svg.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
+    svg.addEventListener('keydown', (e) => this.onKey(e));
+    svg.addEventListener('dblclick', () => this.set(100));
+
+    this.svg = svg;
+    container.append(svg);
+
+    this.ticks = new Map();
+    for (let v = 80; v <= 110; v += 5) {
+      const s = document.createElement('span');
+      s.className = 'bpm-tick';
+      s.textContent = v;
+      s.style.setProperty('--a', (-135 + ((v - 80) / 30) * 270) + 'deg');
+      container.append(s);
+      this.ticks.set(v, s);
+    }
+    this.render();
+  }
+
+  set(v) {
+    this.value = Math.round(Math.min(110, Math.max(80, v)));
+    bpmValue = this.value;
+    this.render();
+  }
+
+  render() {
+    const t = (this.value - 80) / 30;
+    this.ptr.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 33 33)');
+    this.svg.setAttribute('aria-valuenow', this.value);
+    const nearest = Math.round(this.value / 5) * 5;
+    for (const [v, s] of this.ticks) s.classList.toggle('active', v === nearest);
+  }
+
+  startDrag(e) {
+    e.preventDefault();
+    this.svg.focus();
+    this.svg.setPointerCapture(e.pointerId);
+    const startY = e.clientY;
+    const startVal = this.value;
+    const move = (ev) => {
+      const d = (startY - ev.clientY) / 150;
+      this.set(startVal + d * 30);
+    };
+    const up = () => {
+      this.svg.removeEventListener('pointermove', move);
+      this.svg.removeEventListener('pointerup', up);
+      this.svg.removeEventListener('pointercancel', up);
+    };
+    this.svg.addEventListener('pointermove', move);
+    this.svg.addEventListener('pointerup', up);
+    this.svg.addEventListener('pointercancel', up);
+  }
+
+  onWheel(e) {
+    e.preventDefault();
+    const dir = e.deltaY < 0 ? 1 : -1;
+    this.set(this.value + dir * (e.shiftKey ? 1 : 5));
+  }
+
+  onKey(e) {
+    let d = 0;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') d = 1;
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') d = -1;
+    else return;
+    e.preventDefault();
+    this.set(this.value + d * (e.shiftKey ? 10 : 1));
+  }
+}
+
 function paintRange(input) {
   const min = parseFloat(input.min) || 0;
   const max = parseFloat(input.max) || 1;
@@ -469,7 +587,7 @@ function paintRange(input) {
 
 function paramControl(p) {
   const row = document.createElement('div');
-  row.className = 'param';
+  row.className = 'param param-' + p.id;
 
   const out = document.createElement('span');
   out.className = 'param-value';
@@ -479,23 +597,36 @@ function paramControl(p) {
   label.className = 'param-label';
   label.textContent = p.label;
 
-  if (p.type === 'select') {
-    const sel = document.createElement('select');
-    for (const opt of p.options) {
-      const o = document.createElement('option');
-      o.value = opt;
-      o.textContent = opt;
-      if (opt === p.value) o.selected = true;
-      sel.appendChild(o);
-    }
-    sel.addEventListener('input', () => {
-      params[p.id] = sel.value;
+  if (p.type === 'stepper') {
+    row.classList.add('param-stepper');
+    const box = document.createElement('div');
+    box.className = 'stepper';
+    const val = document.createElement('span');
+    val.className = 'stepper-value';
+    val.textContent = params[p.id];
+    const shift = (dir) => {
+      const i = p.options.indexOf(params[p.id]);
+      params[p.id] = p.options[(i + dir + p.options.length) % p.options.length];
+      val.textContent = params[p.id];
       out.textContent = fmtValue(p, params[p.id]);
       applyLive(p.id);
-    });
-    row.append(label, sel, out);
+    };
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'stepper-btn stepper-prev';
+    prev.setAttribute('aria-label', 'previous waveform');
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'stepper-btn stepper-next';
+    next.setAttribute('aria-label', 'next waveform');
+    prev.addEventListener('click', () => shift(-1));
+    next.addEventListener('click', () => shift(1));
+    box.append(prev, val, next);
+    row.append(label, box, out);
   } else if (p.type === 'slider') {
     row.classList.add('param-slider');
+    const wrap = document.createElement('span');
+    wrap.className = 'slider-wrap';
     const input = document.createElement('input');
     input.type = 'range';
     input.min = p.min;
@@ -509,24 +640,32 @@ function paramControl(p) {
       out.textContent = fmtValue(p, params[p.id]);
       applyLive(p.id);
     });
-    row.append(label, input, out);
+    wrap.append(input);
+    row.append(label, wrap, out);
   } else {
+    row.classList.add('param-knob');
     const knob = new Knob(p, () => {
       out.textContent = fmtValue(p, params[p.id]);
       applyLive(p.id);
     });
-    row.append(knob.svg, label, out);
+    const wrap = document.createElement('div');
+    wrap.className = 'knob-wrap';
+    wrap.append(knob.svg);
+    for (let i = 0; i < 7; i++) {
+      const tick = document.createElement('span');
+      tick.className = 'knob-scale';
+      tick.style.setProperty('--a', (-135 + i * 45) + 'deg');
+      tick.textContent = Math.round(p.min + (p.max - p.min) * (i / 6));
+      wrap.append(tick);
+    }
+    row.append(label, wrap, out);
   }
   return row;
 }
 
-function buildRoll(container, rowLabels, onClick) {
+function buildRoll(container, rowCount, onClick) {
   const cellRefs = [];
-  for (let row = 0; row < rowLabels.length; row++) {
-    const label = document.createElement('div');
-    label.className = 'note-label';
-    label.textContent = rowLabels[row];
-    container.appendChild(label);
+  for (let row = 0; row < rowCount; row++) {
     cellRefs[row] = [];
     for (let step = 0; step < STEPS; step++) {
       const cell = document.createElement('button');
@@ -538,10 +677,6 @@ function buildRoll(container, rowLabels, onClick) {
     }
   }
   return cellRefs;
-}
-
-function fluteLabels() {
-  return PITCHES.map((midi) => NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1));
 }
 
 function onFluteCellClick(step, row, cell) {
@@ -574,12 +709,7 @@ function initControls() {
     if (isPlaying) stopPlayback();
     else startPlayback();
   });
-  const bpm = $('#bpm');
-  paintRange(bpm);
-  bpm.addEventListener('input', () => {
-    paintRange(bpm);
-    $('#bpm-value').textContent = bpm.value;
-  });
+  new BpmKnob($('#bpm-knob'));
   $('#btn-preview').addEventListener('click', () => {
     previewOn = !previewOn;
     $('#btn-preview').textContent = 'preview: ' + (previewOn ? 'on' : 'off');
@@ -598,12 +728,13 @@ function initControls() {
   });
 }
 
-fluteCells = buildRoll($('#piano-roll'), fluteLabels(), onFluteCellClick);
+fluteCells = buildRoll($('#piano-roll'), ROWS, onFluteCellClick);
 for (const [step, row] of FLUTE_DEMO) fluteCells[row][step].classList.add('active');
-drumCells = buildRoll($('#drum-roll'), DRUM_ROWS, onDrumCellClick);
+drumCells = buildRoll($('#drum-roll'), DRUM_COUNT, onDrumCellClick);
 for (const [step, row] of DRUM_DEMO) drumCells[row][step].classList.add('active');
+buildPanel($('#melody-left'), MELODY_LEFT);
+buildPanel($('#melody-right'), MELODY_RIGHT);
+buildPanel($('#drums-left'), DRUMS_LEFT);
+buildPanel($('#drums-right'), DRUMS_RIGHT);
 $('#volume-knob').append(paramControl(VOLUME_PARAM));
-buildPanel($('#panel'), PARAMS);
-buildPanel($('#common-panel'), COMMON_PARAMS);
-buildPanel($('#drum-panel'), DRUM_PARAMS);
 initControls();
