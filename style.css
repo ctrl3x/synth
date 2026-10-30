@@ -139,11 +139,24 @@ body {
   align-self: flex-start;
   width: 132px;
   height: 251px;
-  filter: blur(0.8px);
 }
 
 .panel-drums .panel-crystal {
   align-self: flex-end;
+}
+
+/* кристаллы плавно поднимаются и опускаются, пока играет музыка */
+.panel-crystal {
+  will-change: transform;
+}
+
+body.playing .panel-crystal {
+  animation: crystal-float 3s ease-in-out infinite;
+}
+
+@keyframes crystal-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-24px); }
 }
 
 /* ── Строки параметров ─────────────────────────────────── */
@@ -240,27 +253,12 @@ input[type='range']::-moz-range-thumb {
   position: relative;
   width: 150px;
   height: 124px;
-  margin-top: 40px;
+  margin-top: 34px;
 }
 
 .knob-wrap .knob {
   position: absolute;
-  left: 42px;
-  top: 39px;
-}
-
-.knob-scale,
-.bpm-tick {
-  position: absolute;
-  font-size: 15px;
-  line-height: 18px;
-  white-space: nowrap;
-  transform: translate(-50%, -50%) rotate(var(--a)) translateY(-62px) rotate(calc(-1 * var(--a)));
-}
-
-.knob-scale {
-  left: 75px;
-  top: 72px;
+  inset: 0;
 }
 
 .knob:focus {
@@ -397,16 +395,18 @@ button:hover {
 
 .bpm-knob .knob {
   position: absolute;
-  left: 34px;
-  top: 37px;
+  inset: 0;
 }
 
-.bpm-tick {
-  left: 67px;
-  top: 70px;
-}
-
-.bpm-tick.active {
+/* подписи шкалы ручек — позиции задаёт js из макета */
+.bpm-tick,
+.knob-scale {
+  position: absolute;
+  font-family: 'Tiny5', monospace;
+  font-size: 16px;
+  line-height: 18px;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
   color: var(--cyan);
 }
 
@@ -423,7 +423,8 @@ button:hover {
   grid-template-columns: repeat(16, 1fr);
   grid-template-rows: repeat(8, 1fr);
   background-image:
-    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 8)),
+    repeating-linear-gradient(to right, var(--text) 0 2px, transparent 2px calc(100% / 8)),
+    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 16)),
     repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px calc(100% / 8));
 }
 
@@ -432,8 +433,8 @@ button:hover {
   grid-template-columns: repeat(16, 1fr);
   grid-template-rows: repeat(2, 1fr);
   background-image:
-    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 8)),
-    repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px calc(100% / 2));
+    repeating-linear-gradient(to right, var(--text) 0 2px, transparent 2px calc(100% / 8)),
+    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / 16));
 }
 
 .cell {
@@ -487,8 +488,32 @@ button:hover {
   height: 3px;
 }
 
+/* активный шаг — кружок цвета --cyan: верхний ряд 5px, нижний 7px */
+.roll-drums .cell.active {
+  background: transparent;
+}
+
 .roll-drums .cell.active::after {
-  display: none;
+  background: var(--cyan);
+  opacity: 1;
+}
+
+.roll-drums .cell:nth-child(-n+16).active::after {
+  width: 5px;
+  height: 5px;
+}
+
+.roll-drums .cell:nth-child(n+17).active::after {
+  width: 7px;
+  height: 7px;
+}
+
+.roll-drums .cell.active.playing {
+  background: rgba(51, 170, 255, 0.16);
+}
+
+.roll-drums .cell.active.playing::after {
+  box-shadow: 0 0 6px var(--cyan);
 }
 
 /* ── Мастер-громкость ──────────────────────────────────── */

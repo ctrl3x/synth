@@ -17,7 +17,7 @@ const MELODY_LEFT = [
 
 const MELODY_RIGHT = [
   { id: 'fluteLevel', label: 'volume', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.7 },
-  { id: 'detune', label: 'detune', min: 0, max: 50, step: 1, value: 8, unit: 'ct' },
+  { id: 'detune', label: 'detune', min: -100, max: 100, step: 1, value: 0, unit: 'ct' },
   { id: 'cutoff', label: 'cutoff', type: 'slider', min: 200, max: 8000, step: 10, value: 2600, unit: 'Hz' },
   { id: 'waveform', label: 'waveform', type: 'stepper', options: ['sine', 'triangle', 'square', 'sawtooth'], value: 'triangle' },
 ];
@@ -25,7 +25,7 @@ const MELODY_RIGHT = [
 // Панель DRUMS: левая колонка — шина, правая — барабаны и реверб
 const DRUMS_LEFT = [
   { id: 'drumVolume', label: 'volume', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.7 },
-  { id: 'detuneAll', label: 'detune', min: -50, max: 50, step: 1, value: 0, unit: 'ct' },
+  { id: 'detuneAll', label: 'detune', min: -100, max: 100, step: 1, value: 0, unit: 'ct' },
   { id: 'underCutoff', label: 'underwater', type: 'slider', min: 200, max: 4000, step: 10, value: 1200, unit: 'Hz' },
   { id: 'drumLevel', label: 'drum level', type: 'slider', min: 0, max: 1, step: 0.01, value: 0.6 },
 ];
@@ -346,6 +346,7 @@ function startPlayback() {
   currentStep = 0;
   nextStepTime = audio.ctx.currentTime + 0.06;
   schedulerId = setInterval(schedulerTick, 25);
+  document.body.classList.add('playing');
   $('#btn-play').textContent = 'Stop';
 }
 
@@ -353,6 +354,7 @@ function stopPlayback() {
   isPlaying = false;
   clearInterval(schedulerId);
   clearPlayhead();
+  document.body.classList.remove('playing');
   $('#btn-play').textContent = 'Play';
 }
 
@@ -370,31 +372,37 @@ function fmtValue(p, v) {
   return p.unit ? v + ' ' + p.unit : String(v);
 }
 
-function pixelCirclePoints(cx, cy, r, step) {
-  const pts = [];
-  const n = Math.round((2 * r) / step);
-  const half = (y) => Math.floor(Math.sqrt(Math.max(0, r * r - y * y)) / step) * step;
-  for (let i = n; i >= 0; i--) {
-    const y = -r + i * step;
-    pts.push((cx - half(y)).toFixed(1) + ',' + (cy + y).toFixed(1));
+// Корпус ручки: горизонтальные полосы из макета. Полосы стыкуются встык, поэтому
+// рисуем их одним контуром — у отдельных прямоугольников сглаженные края дают
+// заметные швы (светлые линии) на стыках, особенно при повороте ручки.
+const KNOB_BANDS = [
+  [43, 6, 36], [49, 5, 46], [54, 11, 58], [65, 12, 66],
+  [77, 12, 58], [89, 6, 46], [95, 5, 36], [100, 4, 12],
+];
+
+// Силуэт корпуса (полосы + «хвостик» снизу) как один путь вокруг cx
+function knobBodyPath(bands, cx) {
+  let d = 'M' + (cx - bands[0][2] / 2) + ' ' + bands[0][0];
+  for (const [y, h, w] of bands) {
+    d += 'L' + (cx + w / 2) + ' ' + y + 'L' + (cx + w / 2) + ' ' + (y + h);
   }
-  for (let i = 0; i <= n; i++) {
-    const y = -r + i * step;
-    pts.push((cx + half(y)).toFixed(1) + ',' + (cy + y).toFixed(1));
+  for (let i = bands.length - 1; i >= 0; i--) {
+    const [y, h, w] = bands[i];
+    d += 'L' + (cx - w / 2) + ' ' + (y + h) + 'L' + (cx - w / 2) + ' ' + y;
   }
-  return pts.join(' ');
+  return d + 'Z';
 }
 
 class Knob {
-  constructor(p, onChange, opts = {}) {
+  constructor(p, onChange, container) {
     this.p = p;
     this.onChange = onChange;
     this.value = params[p.id];
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 66 66');
-    svg.setAttribute('width', '66');
-    svg.setAttribute('height', '66');
+    svg.setAttribute('viewBox', '0 0 150 124');
+    svg.setAttribute('width', '150');
+    svg.setAttribute('height', '124');
     svg.setAttribute('role', 'slider');
     svg.setAttribute('tabindex', '0');
     svg.setAttribute('aria-label', p.label);
@@ -402,25 +410,63 @@ class Knob {
     svg.setAttribute('aria-valuemax', p.max);
     svg.classList.add('knob');
 
-    const body = document.createElementNS(ns, 'polygon');
-    body.setAttribute('points', pixelCirclePoints(33, 33, 31, 4));
-    body.setAttribute('fill', opts.body || '#7245F6');
+    // корпус — пиксельный диск из макета: горизонтальные полосы + «хвостик» снизу;
+    // диск и указатель собраны в одну группу и крутятся целиком вокруг центра диска
+    this.rot = document.createElementNS(ns, 'g');
+    const body = document.createElementNS(ns, 'path');
+    body.setAttribute('d', knobBodyPath(KNOB_BANDS, 75));
+    body.setAttribute('fill', '#7245F6');
+    this.rot.append(body);
 
-    this.ptr = document.createElementNS(ns, 'line');
-    this.ptr.setAttribute('x1', '33');
-    this.ptr.setAttribute('y1', '33');
-    this.ptr.setAttribute('x2', '33');
-    this.ptr.setAttribute('y2', '7');
-    this.ptr.setAttribute('stroke', opts.pointer || '#02EEFA');
-    this.ptr.setAttribute('stroke-width', '5');
+    // штрихи шкалы: 7 линий между диском и подписями
+    for (let i = 0; i < 7; i++) {
+      const a = (-135 + i * 45) * Math.PI / 180;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', (75 + 39 * Math.sin(a)).toFixed(2));
+      line.setAttribute('y1', (70 - 39 * Math.cos(a)).toFixed(2));
+      line.setAttribute('x2', (75 + 49 * Math.sin(a)).toFixed(2));
+      line.setAttribute('y2', (70 - 49 * Math.cos(a)).toFixed(2));
+      line.setAttribute('stroke', '#02EEFA');
+      line.setAttribute('stroke-width', '2');
+      svg.append(line);
+    }
 
-    svg.append(body, this.ptr);
+    // указатель — голубая фишка с тёмной обводкой: торчит из-за края диска
+    const stick = document.createElementNS(ns, 'rect');
+    stick.setAttribute('x', '72');
+    stick.setAttribute('y', '36');
+    stick.setAttribute('width', '6');
+    stick.setAttribute('height', '22');
+    stick.setAttribute('fill', '#02EEFA');
+    stick.setAttribute('stroke', '#000616');
+    stick.setAttribute('stroke-width', '1');
+    this.rot.append(stick);
+    svg.append(this.rot);
+
     svg.addEventListener('pointerdown', (e) => this.startDrag(e));
     svg.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     svg.addEventListener('keydown', (e) => this.onKey(e));
     svg.addEventListener('dblclick', () => this.set(p.value));
 
     this.svg = svg;
+    container.append(svg);
+
+    // подписи шкалы — центры надписей взяты из макета
+    this.ticks = new Map();
+    const TICKS = [
+      [0, 75.5, 9.5], [-33, 29.5, 26], [33, 123.5, 26],
+      [-66, 11.5, 67.5], [66, 141.5, 67.5],
+      [-100, 25.5, 114], [100, 127.5, 114],
+    ];
+    for (const [v, x, y] of TICKS) {
+      const s = document.createElement('span');
+      s.className = 'knob-scale';
+      s.textContent = v;
+      s.style.left = x + 'px';
+      s.style.top = y + 'px';
+      container.append(s);
+      this.ticks.set(v, s);
+    }
     this.render();
   }
 
@@ -440,8 +486,13 @@ class Knob {
 
   render() {
     const t = (this.value - this.p.min) / (this.p.max - this.p.min);
-    this.ptr.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 33 33)');
+    this.rot.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 75 71.5)');
     this.svg.setAttribute('aria-valuenow', this.value);
+    let nearest = null;
+    for (const v of this.ticks.keys()) {
+      if (nearest === null || Math.abs(v - this.value) < Math.abs(nearest - this.value)) nearest = v;
+    }
+    for (const [v, s] of this.ticks) s.classList.toggle('active', v === nearest);
   }
 
   startDrag(e) {
@@ -485,9 +536,9 @@ class BpmKnob {
     this.value = bpmValue;
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 66 66');
-    svg.setAttribute('width', '66');
-    svg.setAttribute('height', '66');
+    svg.setAttribute('viewBox', '0 0 150 124');
+    svg.setAttribute('width', '150');
+    svg.setAttribute('height', '124');
     svg.setAttribute('role', 'slider');
     svg.setAttribute('tabindex', '0');
     svg.setAttribute('aria-label', 'bpm');
@@ -495,19 +546,39 @@ class BpmKnob {
     svg.setAttribute('aria-valuemax', '110');
     svg.classList.add('knob');
 
-    const body = document.createElementNS(ns, 'polygon');
-    body.setAttribute('points', pixelCirclePoints(33, 33, 31, 4));
+    // корпус — пиксельный диск из макета: горизонтальные полосы + «хвостик» снизу;
+    // диск и указатель собраны в одну группу и крутятся целиком вокруг центра диска
+    this.rot = document.createElementNS(ns, 'g');
+    const body = document.createElementNS(ns, 'path');
+    body.setAttribute('d', knobBodyPath(KNOB_BANDS, 75));
     body.setAttribute('fill', '#02EEFA');
+    this.rot.append(body);
 
-    this.ptr = document.createElementNS(ns, 'line');
-    this.ptr.setAttribute('x1', '33');
-    this.ptr.setAttribute('y1', '33');
-    this.ptr.setAttribute('x2', '33');
-    this.ptr.setAttribute('y2', '7');
-    this.ptr.setAttribute('stroke', '#000616');
-    this.ptr.setAttribute('stroke-width', '5');
+    // штрихи шкалы: 7 линий между диском и подписями
+    for (let i = 0; i < 7; i++) {
+      const a = (-135 + i * 45) * Math.PI / 180;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', (75 + 39 * Math.sin(a)).toFixed(2));
+      line.setAttribute('y1', (70 - 39 * Math.cos(a)).toFixed(2));
+      line.setAttribute('x2', (75 + 49 * Math.sin(a)).toFixed(2));
+      line.setAttribute('y2', (70 - 49 * Math.cos(a)).toFixed(2));
+      line.setAttribute('stroke', '#7245F6');
+      line.setAttribute('stroke-width', '2');
+      svg.append(line);
+    }
 
-    svg.append(body, this.ptr);
+    // указатель — фиолетовая фишка с тёмной обводкой: торчит из-за края диска
+    const stick = document.createElementNS(ns, 'rect');
+    stick.setAttribute('x', '72');
+    stick.setAttribute('y', '36');
+    stick.setAttribute('width', '6');
+    stick.setAttribute('height', '22');
+    stick.setAttribute('fill', '#7245F6');
+    stick.setAttribute('stroke', '#000616');
+    stick.setAttribute('stroke-width', '1');
+    this.rot.append(stick);
+    svg.append(this.rot);
+
     svg.addEventListener('pointerdown', (e) => this.startDrag(e));
     svg.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     svg.addEventListener('keydown', (e) => this.onKey(e));
@@ -516,12 +587,19 @@ class BpmKnob {
     this.svg = svg;
     container.append(svg);
 
+    // подписи шкалы — центры надписей взяты из макета
     this.ticks = new Map();
-    for (let v = 80; v <= 110; v += 5) {
+    const TICKS = [
+      [95, 74, 9.5], [90, 33.5, 26], [100, 127.5, 26],
+      [85, 15.5, 67.5], [105, 145.5, 67.5],
+      [80, 33.5, 114], [110, 127.5, 114],
+    ];
+    for (const [v, x, y] of TICKS) {
       const s = document.createElement('span');
       s.className = 'bpm-tick';
       s.textContent = v;
-      s.style.setProperty('--a', (-135 + ((v - 80) / 30) * 270) + 'deg');
+      s.style.left = x + 'px';
+      s.style.top = y + 'px';
       container.append(s);
       this.ticks.set(v, s);
     }
@@ -536,7 +614,7 @@ class BpmKnob {
 
   render() {
     const t = (this.value - 80) / 30;
-    this.ptr.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 33 33)');
+    this.rot.setAttribute('transform', 'rotate(' + (-135 + t * 270) + ' 75 71.5)');
     this.svg.setAttribute('aria-valuenow', this.value);
     const nearest = Math.round(this.value / 5) * 5;
     for (const [v, s] of this.ticks) s.classList.toggle('active', v === nearest);
@@ -644,20 +722,12 @@ function paramControl(p) {
     row.append(label, wrap, out);
   } else {
     row.classList.add('param-knob');
+    const wrap = document.createElement('div');
+    wrap.className = 'knob-wrap';
     const knob = new Knob(p, () => {
       out.textContent = fmtValue(p, params[p.id]);
       applyLive(p.id);
-    });
-    const wrap = document.createElement('div');
-    wrap.className = 'knob-wrap';
-    wrap.append(knob.svg);
-    for (let i = 0; i < 7; i++) {
-      const tick = document.createElement('span');
-      tick.className = 'knob-scale';
-      tick.style.setProperty('--a', (-135 + i * 45) + 'deg');
-      tick.textContent = Math.round(p.min + (p.max - p.min) * (i / 6));
-      wrap.append(tick);
-    }
+    }, wrap);
     row.append(label, wrap, out);
   }
   return row;
@@ -738,3 +808,16 @@ buildPanel($('#drums-left'), DRUMS_LEFT);
 buildPanel($('#drums-right'), DRUMS_RIGHT);
 $('#volume-knob').append(paramControl(VOLUME_PARAM));
 initControls();
+
+// На больших экранах пропорционально увеличиваем страницу (макет 1280×832),
+// чтобы она занимала весь экран, не меняя пропорций.
+const STAGE_W = 1280;
+const STAGE_H = 832;
+
+function fitStage() {
+  const scale = Math.max(1, Math.min(innerWidth / STAGE_W, innerHeight / STAGE_H));
+  document.querySelector('.stage').style.zoom = scale;
+}
+
+fitStage();
+addEventListener('resize', fitStage);
